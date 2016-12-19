@@ -21,6 +21,10 @@ appdata_s *__g_ad = NULL;
 static void show_remocon_page();
 static void show_gameplay_page();
 
+static void on_roll_cylinder();
+static void on_pull_trigger();
+static void on_play_again();
+
 static void
 win_delete_request_cb(void *data, Evas_Object *obj, void *event_info)
 {
@@ -158,7 +162,18 @@ remote_sensor_listener_cb(conv_service_h service_h, conv_channel_h channel_h,
 			conv_payload_get_string(payload_h, "z", &z);
 			conv_payload_get_string(payload_h, "timestamp", &timestamp);
 
-			dlog_print(DLOG_INFO, LOG_TAG, "\tACCEL <%s, %s, %s>-----", x, y, z);
+			double dx = atof(x);
+			double dy = atof(y);
+			double dz = atof(z);
+			double a = sqrt(dx * dx + dy * dy + dz * dz);
+
+			dlog_print(DLOG_INFO, LOG_TAG, "\tACCEL <%f\t%f\t%f>-----[%f]", dx, dy, dz, a);
+
+			if (a > 15.) {
+				// Roll event detected.
+				dlog_print(DLOG_INFO, LOG_TAG, "***** ROLL EVENT DETECTED! *****");
+				on_roll_cylinder();
+			}
 
 			g_free(x);
 			g_free(y);
@@ -175,6 +190,12 @@ remote_sensor_listener_cb(conv_service_h service_h, conv_channel_h channel_h,
 			dlog_print(DLOG_INFO, LOG_TAG, "\tPROXI");
 			dlog_print(DLOG_INFO, LOG_TAG, "\tPROXI <%s>-----", proximity);
 			dlog_print(DLOG_INFO, LOG_TAG, "\tPROXI");
+
+			if (atof(proximity) == .0) {
+				// The trigger pulled.
+				dlog_print(DLOG_INFO, LOG_TAG, "***** TRIGGER PULLED! *****");
+				on_pull_trigger();
+			}
 
 			g_free(proximity);
 			g_free(timestamp);
@@ -356,17 +377,37 @@ revolver_list_selected_callback(void *data, Evas_Object *obj, void *event_info)
 	}*/
 }
 
-static void main_button_click_event(void *data, Evas_Object *obj, void *event_info)
+static void
+on_roll_cylinder()
+{
+	elm_object_text_set(__g_ad->main_button, "Pull the trigger...");
+}
+
+static void
+on_pull_trigger()
+{
+	elm_object_text_set(__g_ad->main_button, "Play again?");
+}
+
+static void
+on_play_again()
+{
+	elm_object_text_set(__g_ad->main_button, "Roll!!");
+}
+
+
+static void
+main_button_click_event(void *data, Evas_Object *obj, void *event_info)
 {
 	dlog_print(DLOG_INFO, LOG_TAG, "main_button_click_event");
 
 	const char *btn_text = elm_object_text_get(__g_ad->main_button);
 	if (!strcmp(btn_text, "Roll!!"))
-		elm_object_text_set(__g_ad->main_button, "Pull the trigger...");
+		on_roll_cylinder();
 	else if (!strcmp(btn_text, "Pull the trigger..."))
-		elm_object_text_set(__g_ad->main_button, "Play again?");
+		on_pull_trigger();
 	else if (!strcmp(btn_text, "Play again?"))
-		elm_object_text_set(__g_ad->main_button, "Roll!!");
+		on_play_again();
 
 	/*if(__g_ad->main_button_lock == false){
 
