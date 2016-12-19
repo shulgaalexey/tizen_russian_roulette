@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<manifest xmlns="http://tizen.org/ns/packages" api-version="3.0" package="org.example.d2d_russian_roulette" version="1.0.0">
+    <profile name="mobile"/>
+    <ui-application appid="org.example.d2d_russian_roulette" exec="d2d_russian_roulette" launch_mode="single" multiple="false" nodisplay="false" taskmanage="true" type="capp">
+        <label>d2d_russian_roulette</label>
+        <icon>d2d_russian_roulette.png</icon>
+    </ui-application>
+    <privileges>
+        <privilege>http://tizen.org/privilege/d2d.datasharing</privilege>
+        <privilege>http://tizen.org/privilege/bluetooth</privilege>
+        <privilege>http://tizen.org/privilege/internet</privilege>
+    </privileges>
+</manifest>
