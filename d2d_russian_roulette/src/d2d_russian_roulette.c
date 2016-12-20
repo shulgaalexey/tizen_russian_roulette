@@ -441,7 +441,14 @@ on_pull_trigger()
 		return;
 	}
 
-	elm_object_text_set(__g_ad->main_button, "Play again?");
+	if (elm_list_selected_item_get(__g_ad->revolver_list) ==
+			elm_list_first_item_get(__g_ad->revolver_list)) {
+		// GAME OVER
+		dlog_print(DLOG_INFO, LOG_TAG, "***** GAME OVER *****");
+		elm_object_text_set(__g_ad->main_button, "GAME OVER");
+	} else {
+		elm_object_text_set(__g_ad->main_button, "Play again?");
+	}
 
 	// TODO How to disable the button????
 	//elm_object_item_disabled_set(__g_ad->main_button, EINA_FALSE);
@@ -472,6 +479,8 @@ main_button_click_event(void *data, Evas_Object *obj, void *event_info)
 		on_pull_trigger();
 	else if (!strcmp(btn_text, "Play again?"))
 		on_play_again();
+	else if (!strcmp(btn_text, "GAME OVER"))
+		ui_app_exit();
 }
 
 static void
