@@ -16,7 +16,8 @@ typedef struct appdata {
 	int timer_ticks_remaining;
 	conv_h conv_h;
 	conv_device_h selected_device_h;
-	conv_service_h selected_service_h;
+	conv_service_h selected_rss_service_h;
+	conv_service_h selected_rac_service_h;
 } appdata_s;
 
 appdata_s *__g_ad = NULL;
@@ -88,7 +89,7 @@ remote_sensor_listener_cb(conv_service_h service_h, conv_channel_h channel_h,
 
 	// That clonned handle is a handle we should use.
 	// The handle, passed to the callback is temporary within the callback scope.
-	conv_service_h service_clone_h = __g_ad->selected_service_h;
+	conv_service_h service_clone_h = __g_ad->selected_rss_service_h;
 
 	if (!service_clone_h || !service_h || (error != CONV_ERROR_NONE) || !payload_h) {
 		dlog_print(DLOG_ERROR, LOG_TAG, "Invalid arguments of listener callback:");
@@ -219,32 +220,81 @@ remote_sensor_listener_cb(conv_service_h service_h, conv_channel_h channel_h,
 }
 
 static void
+remote_app_control_listener_cb(conv_service_h service_h, conv_channel_h channel_h,
+		conv_error_e error, conv_payload_h payload_h, void* user_data)
+{
+	//dlog_print(DLOG_INFO, LOG_TAG, "remote_sensor_listener_cb()");
+
+	// That clonned handle is a handle we should use.
+	// The handle, passed to the callback is temporary within the callback scope.
+	conv_service_h service_clone_h = __g_ad->selected_rss_service_h;
+
+	if (!service_clone_h || !service_h || (error != CONV_ERROR_NONE) || !payload_h) {
+		dlog_print(DLOG_ERROR, LOG_TAG, "Invalid arguments of listener callback:");
+		dlog_print(DLOG_ERROR, LOG_TAG, "   cloned service handle: %p", service_clone_h);
+		dlog_print(DLOG_ERROR, LOG_TAG, "   service handle: %p", service_h);
+		dlog_print(DLOG_ERROR, LOG_TAG, "   Response error [%d]", error);
+		dlog_print(DLOG_ERROR, LOG_TAG, "   payload_handle %p", payload_h);
+		return; // Too bad, arguments are invalid
+	}
+
+	char *result_type = NULL;
+	int ret = conv_payload_get_string(payload_h, "result_type", &result_type);
+	if (ret != CONV_ERROR_NONE) {
+		dlog_print(DLOG_ERROR, LOG_TAG, "conv_payload_get_string Error getting result_type from payload_handle [%d]", ret);
+		return;
+	}
+
+	if (!(strcmp(result_type, "onStart"))) { // 1. Service started
+		dlog_print(DLOG_INFO, LOG_TAG, "The Remote App Control Service started!");
+	} else if (!strcmp(result_type, "onPublish")) { // 2. App Control request processed sucessfully
+		dlog_print(DLOG_INFO, LOG_TAG, "App Control request successful : %s Result", result_type);
+
+		// TODO How to terminate remotely the media player?
+		//app_control_send_terminate_request(app_control_h app_control);
+	} else if (!strcmp(result_type, "onStop")) { // 3. Service stopped
+		dlog_print(DLOG_INFO, LOG_TAG, "Read request successful : %s Result", result_type);
+	} else {
+		// Very bad situation. It should never happen.
+		// It indicates the inconsistency in sensor data schema.
+		dlog_print(DLOG_ERROR, LOG_TAG, "Unexpected result type : %s", result_type);
+	}
+
+	g_free(result_type);
+}
+
+static void
 rss_start_service_foreach_cb(conv_service_h service_h, void* user_data)
 {
 	dlog_print(DLOG_INFO, LOG_TAG, "rss_start_service_foreach_cb.");
 
 	conv_service_e service = CONV_SERVICE_NONE;
 	conv_service_get_type(service_h, &service);
-	if (service != CONV_SERVICE_REMOTE_SENSOR)
-		return;
+	if (service == CONV_SERVICE_REMOTE_SENSOR) {
+		dlog_print(DLOG_INFO, LOG_TAG, "Found Remote Sensor Service. Stopping discovery...");
+		conv_discovery_stop(__g_ad->conv_h);
 
-	dlog_print(DLOG_INFO, LOG_TAG, "Found Remote Sensor Service. Stopping discovery...");
-	conv_discovery_stop(__g_ad->conv_h);
+		// To use the service we should clone its handle
+		conv_service_clone(service_h, &__g_ad->selected_rss_service_h);
 
-	// To use the service we should clone its handle
-	conv_service_clone(service_h, &__g_ad->selected_service_h);
+		dlog_print(DLOG_INFO, LOG_TAG, "Starting the Service...");
 
-	dlog_print(DLOG_INFO, LOG_TAG, "Starting the Service...");
+		conv_service_set_listener_cb(__g_ad->selected_rss_service_h, remote_sensor_listener_cb, NULL);
 
-	conv_service_set_listener_cb(__g_ad->selected_service_h, remote_sensor_listener_cb, NULL);
-
-	conv_channel_h channel_h = NULL;
-	conv_channel_create(&channel_h);
-	conv_channel_set_string(channel_h, "type", "config");
-	int ret = conv_service_start(__g_ad->selected_service_h, channel_h, NULL);
-	if (ret != CONV_ERROR_NONE)
-		dlog_print(DLOG_INFO, LOG_TAG, "conv_service_start error [%d]", ret);
-	conv_channel_destroy(channel_h);
+		conv_channel_h channel_h = NULL;
+		conv_channel_create(&channel_h);
+		conv_channel_set_string(channel_h, "type", "config");
+		int ret = conv_service_start(__g_ad->selected_rss_service_h, channel_h, NULL);
+		if (ret != CONV_ERROR_NONE)
+			dlog_print(DLOG_INFO, LOG_TAG, "conv_service_start error [%d]", ret);
+		conv_channel_destroy(channel_h);
+	} else if (service == CONV_SERVICE_REMOTE_APP_CONTROL) {
+		conv_service_clone(service_h, &__g_ad->selected_rac_service_h);
+		conv_service_set_listener_cb(__g_ad->selected_rac_service_h, remote_app_control_listener_cb, NULL);
+		int ret = conv_service_start(__g_ad->selected_rac_service_h, NULL, NULL);
+		if (ret != CONV_ERROR_NONE)
+					dlog_print(DLOG_INFO, LOG_TAG, "conv_service_start error [%d] - remote app ctrl", ret);
+	}
 }
 
 static void
@@ -445,6 +495,20 @@ on_pull_trigger()
 		// GAME OVER
 		dlog_print(DLOG_INFO, LOG_TAG, "***** GAME OVER *****");
 		elm_object_text_set(__g_ad->main_button, "GAME OVER");
+
+		if (__g_ad->selected_rac_service_h) {
+			app_control_h app_control_h = NULL;
+			app_control_create(&app_control_h);
+			app_control_set_operation(app_control_h, APP_CONTROL_OPERATION_VIEW);
+			app_control_set_uri(app_control_h, "file://home/owner/media/Sounds/cosmo.wav");
+
+			conv_payload_h payload = NULL;
+			conv_payload_create(&payload);
+			conv_payload_set_app_control(payload, "app_control", app_control_h);
+			conv_service_publish(__g_ad->selected_rac_service_h, NULL, payload);
+			conv_payload_destroy(payload);
+			app_control_destroy(app_control_h);
+		}
 	} else {
 		elm_object_text_set(__g_ad->main_button, "Roll");
 	}
@@ -567,9 +631,15 @@ app_terminate(void *data)
 	appdata_s *ad = (appdata_s *)data;
 
 	dlog_print(DLOG_INFO, LOG_TAG, "Destroying the Remote Sensor Service...");
-	if (__g_ad->selected_service_h != NULL) {
-		conv_service_destroy(ad->selected_service_h);
-		__g_ad->selected_service_h = NULL;
+	if (__g_ad->selected_rss_service_h != NULL) {
+		conv_service_destroy(ad->selected_rss_service_h);
+		__g_ad->selected_rss_service_h = NULL;
+	}
+
+	dlog_print(DLOG_INFO, LOG_TAG, "Destroying the Remote App Control Service...");
+	if (__g_ad->selected_rac_service_h != NULL) {
+		conv_service_destroy(ad->selected_rac_service_h);
+		__g_ad->selected_rac_service_h = NULL;
 	}
 
 	dlog_print(DLOG_INFO, LOG_TAG, "Destroying the Convergence Manager Instance...");
