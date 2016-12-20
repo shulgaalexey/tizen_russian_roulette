@@ -11,6 +11,8 @@ typedef struct appdata {
 	Evas_Object *remocon_list;
 	Evas_Object *main_button;
 	bool main_button_lock;
+	Ecore_Timer *timer;
+	int timer_ticks_remaining;
 	conv_h conv_h;
 	conv_device_h selected_device_h;
 	conv_service_h selected_service_h;
@@ -167,7 +169,8 @@ remote_sensor_listener_cb(conv_service_h service_h, conv_channel_h channel_h,
 			double dz = atof(z);
 			double a = sqrt(dx * dx + dy * dy + dz * dz);
 
-			dlog_print(DLOG_INFO, LOG_TAG, "\tACCEL <%f\t%f\t%f>-----[%f]", dx, dy, dz, a);
+			// Temporary comment for debuging button lock
+			//dlog_print(DLOG_INFO, LOG_TAG, "\tACCEL <%f\t%f\t%f>-----[%f]", dx, dy, dz, a);
 
 			if (a > 15.) {
 				// Roll event detected.
@@ -365,34 +368,72 @@ static void
 revolver_list_selected_callback(void *data, Evas_Object *obj, void *event_info)
 {
 	dlog_print(DLOG_INFO, LOG_TAG, "revolver_list_selected_callback.");
+}
 
-	// Not needed
+static Eina_Bool
+__test_timer_cb(void *data)
+{
+	dlog_print(DLOG_INFO, LOG_TAG, "on timer: remaining %d",
+			__g_ad->timer_ticks_remaining);
 
-	/*Elm_Object_Item *it = event_info;
-	elm_list_item_selected_set(it, EINA_FALSE);
+	__g_ad->timer_ticks_remaining--;
 
-	int bullit = (int) data;
-	if (bullit) {
-		// Put the bullit here
-	}*/
+	if (__g_ad->timer_ticks_remaining < 0) {
+		ecore_timer_del(__g_ad->timer);
+		__g_ad->main_button_lock = false;
+		dlog_print(DLOG_INFO, LOG_TAG, "timer stopped and main button unlocked");
+
+		elm_object_text_set(__g_ad->main_button, "Pull the trigger!!!");
+		return ECORE_CALLBACK_CANCEL;
+	}
+	return ECORE_CALLBACK_RENEW;
 }
 
 static void
 on_roll_cylinder()
 {
-	elm_object_text_set(__g_ad->main_button, "Pull the trigger...");
+	if (__g_ad->main_button_lock) {
+		dlog_print(DLOG_INFO, LOG_TAG, "Roll rejected ---");
+		return;
+	}
+
+	elm_object_text_set(__g_ad->main_button, "rolling...");
+
+	__g_ad->main_button_lock = true;
+	dlog_print(DLOG_INFO, LOG_TAG, "main button click locked");
+
+	__g_ad->timer_ticks_remaining = 30 + rand() % 10;
+
+	dlog_print(DLOG_INFO, LOG_TAG, "Rotations planned: %d",
+			__g_ad->timer_ticks_remaining);
+
+	__g_ad->timer = ecore_timer_add(0.5, __test_timer_cb, NULL);
 }
 
 static void
 on_pull_trigger()
 {
+	if (__g_ad->main_button_lock) {
+		dlog_print(DLOG_INFO, LOG_TAG, "Pull rejected ---");
+		return;
+	}
+
 	elm_object_text_set(__g_ad->main_button, "Play again?");
+
+	// TODO How to disable the button????
+	//elm_object_item_disabled_set(__g_ad->main_button, EINA_FALSE);
+	//elm_object_style_set(__g_ad->main_button, "disabled");
 }
 
 static void
 on_play_again()
 {
-	elm_object_text_set(__g_ad->main_button, "Roll!!");
+	if (__g_ad->main_button_lock) {
+		dlog_print(DLOG_INFO, LOG_TAG, "Play again rejected ---");
+		return;
+	}
+
+	elm_object_text_set(__g_ad->main_button, "Roll");
 }
 
 
@@ -402,27 +443,12 @@ main_button_click_event(void *data, Evas_Object *obj, void *event_info)
 	dlog_print(DLOG_INFO, LOG_TAG, "main_button_click_event");
 
 	const char *btn_text = elm_object_text_get(__g_ad->main_button);
-	if (!strcmp(btn_text, "Roll!!"))
+	if (!strcmp(btn_text, "Roll"))
 		on_roll_cylinder();
-	else if (!strcmp(btn_text, "Pull the trigger..."))
+	else if (!strcmp(btn_text, "Pull the trigger!!!"))
 		on_pull_trigger();
 	else if (!strcmp(btn_text, "Play again?"))
 		on_play_again();
-
-	/*if(__g_ad->main_button_lock == false){
-
-		discovery_button_lock = true;
-
-		const char *btn_text = elm_object_text_get(discovery_button);
-
-		if(!strcmp(btn_text, "Discovery Start")){
-			discovery_thread_start();
-		}
-
-		else if(!strcmp(btn_text, "Discovery Stop")) {
-			discovery_thread_stop();
-		}
-	}*/
 }
 
 static void
@@ -450,7 +476,7 @@ show_gameplay_page()
 
 	__g_ad->main_button = elm_button_add(gameplay_page);
 	elm_grid_pack(gameplay_page, __g_ad->main_button, 0, 85, 100, 15);
-	elm_object_text_set(__g_ad->main_button, "Roll!!");
+	elm_object_text_set(__g_ad->main_button, "Roll");
 	evas_object_smart_callback_add(__g_ad->main_button, "clicked", main_button_click_event, NULL);
 	evas_object_show(__g_ad->main_button);
 
@@ -470,6 +496,8 @@ app_create(void *data)
 	create_base_gui(ad);
 
 	show_remocon_page(); // Select the remote control
+
+	srand(time(NULL));
 
 	/* Initialize the D2D Convergence Manager */
 	dlog_print(DLOG_INFO, LOG_TAG, "Creating the Convergence Manager instance...");
