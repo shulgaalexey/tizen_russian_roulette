@@ -487,7 +487,7 @@ show_gameplay_page()
 	const int bullit_pos = rand() % 6;
 	for (int i = 0; i < 6; i++) {
 		Elm_Object_Item *item = elm_list_item_append(__g_ad->revolver_list,
-				((i) ? "[ -------- ]" : "[ -------- ]     ======P"),
+				((i) ? "[ -------- ]" : "[ -------- ]     ======^"),
 						NULL, NULL, revolver_list_selected_callback, (const int *)0);
 		if (i == bullit_pos)
 			elm_list_item_selected_set(item, EINA_TRUE);
