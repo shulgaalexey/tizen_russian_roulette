@@ -26,7 +26,6 @@ static void show_gameplay_page();
 
 static void on_roll_cylinder();
 static void on_pull_trigger();
-static void on_play_again();
 
 static void
 win_delete_request_cb(void *data, Evas_Object *obj, void *event_info)
@@ -447,23 +446,12 @@ on_pull_trigger()
 		dlog_print(DLOG_INFO, LOG_TAG, "***** GAME OVER *****");
 		elm_object_text_set(__g_ad->main_button, "GAME OVER");
 	} else {
-		elm_object_text_set(__g_ad->main_button, "Play again?");
+		elm_object_text_set(__g_ad->main_button, "Roll");
 	}
 
 	// TODO How to disable the button????
 	//elm_object_item_disabled_set(__g_ad->main_button, EINA_FALSE);
 	//elm_object_style_set(__g_ad->main_button, "disabled");
-}
-
-static void
-on_play_again()
-{
-	if (__g_ad->main_button_lock) {
-		dlog_print(DLOG_INFO, LOG_TAG, "Play again rejected ---");
-		return;
-	}
-
-	elm_object_text_set(__g_ad->main_button, "Roll");
 }
 
 
@@ -477,8 +465,6 @@ main_button_click_event(void *data, Evas_Object *obj, void *event_info)
 		on_roll_cylinder();
 	else if (!strcmp(btn_text, "Pull the trigger!!!"))
 		on_pull_trigger();
-	else if (!strcmp(btn_text, "Play again?"))
-		on_play_again();
 	else if (!strcmp(btn_text, "GAME OVER"))
 		ui_app_exit();
 }
