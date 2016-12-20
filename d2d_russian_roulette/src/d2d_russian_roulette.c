@@ -524,14 +524,20 @@ app_create(void *data)
 	int ret = conv_create(&ad->conv_h);
 	if (ret != CONV_ERROR_NONE) {
 		dlog_print(DLOG_DEBUG, LOG_TAG, "Creation of conv_handle failed [%d]", ret);
-		return false;
+		// No remote control: Go to the actual game page.
+		// This may be a case of emulator.
+		show_gameplay_page();
+		return true;
 	}
 
 	dlog_print(DLOG_INFO, LOG_TAG, "Starting Discovery...");
 	ret = conv_discovery_start(ad->conv_h, 15, discovery_cb, (void *)ad);
 	if (ret != CONV_ERROR_NONE) {
 		dlog_print(DLOG_DEBUG, LOG_TAG, "Discovery Failed [%d]", ret);
-		return false;
+		// No remote control: Go to the actual game page.
+		// This may be a case of emulator.
+		show_gameplay_page();
+		return true;
 	}
 
 	return true;
