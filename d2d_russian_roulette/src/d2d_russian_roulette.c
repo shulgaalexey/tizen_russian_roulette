@@ -9,6 +9,7 @@ typedef struct appdata {
 	Evas_Object *conform;
 	Evas_Object *nf;
 	Evas_Object *remocon_list;
+	Evas_Object *revolver_list;
 	Evas_Object *main_button;
 	bool main_button_lock;
 	Ecore_Timer *timer;
@@ -359,6 +360,11 @@ show_remocon_page()
 static Eina_Bool page_gameplay_pop_callback(void *data, Elm_Object_Item *it)
 {
 	dlog_print(DLOG_INFO, LOG_TAG, "page_remocon_pop_callback.");
+
+	if (__g_ad->timer) {
+		ecore_timer_del(__g_ad->timer);
+		__g_ad->timer = NULL;
+	}
 	// TODO stop and destroy the service
 	ui_app_exit();
 	return EINA_FALSE;
@@ -380,12 +386,29 @@ __test_timer_cb(void *data)
 
 	if (__g_ad->timer_ticks_remaining < 0) {
 		ecore_timer_del(__g_ad->timer);
+		__g_ad->timer = NULL;
 		__g_ad->main_button_lock = false;
 		dlog_print(DLOG_INFO, LOG_TAG, "timer stopped and main button unlocked");
 
 		elm_object_text_set(__g_ad->main_button, "Pull the trigger!!!");
 		return ECORE_CALLBACK_CANCEL;
 	}
+
+	// Redrawing the bullit in the cylinder
+	Elm_Object_Item *item = elm_list_selected_item_get(__g_ad->revolver_list);
+	if (item) {
+		elm_list_item_selected_set(item, EINA_FALSE);
+		item = elm_list_item_next(item);
+		if (!item)
+			item = elm_list_first_item_get(__g_ad->revolver_list);
+		elm_list_item_selected_set(item, EINA_TRUE);
+	} else {
+		// This is an error case, because it is supposed that selection
+		// is always exists.
+		item = elm_list_first_item_get(__g_ad->revolver_list);
+		elm_list_item_selected_set(item, EINA_TRUE);
+	}
+
 	return ECORE_CALLBACK_RENEW;
 }
 
@@ -407,7 +430,7 @@ on_roll_cylinder()
 	dlog_print(DLOG_INFO, LOG_TAG, "Rotations planned: %d",
 			__g_ad->timer_ticks_remaining);
 
-	__g_ad->timer = ecore_timer_add(0.5, __test_timer_cb, NULL);
+	__g_ad->timer = ecore_timer_add(0.2, __test_timer_cb, NULL);
 }
 
 static void
@@ -463,16 +486,18 @@ show_gameplay_page()
 	elm_grid_pack(gameplay_page, revolver_list_frame, 0, 0, 100, 100);
 	evas_object_show(revolver_list_frame);
 
-	Evas_Object *revolver_list = elm_list_add(revolver_list_frame);
-	elm_object_content_set(revolver_list_frame, revolver_list);
-	elm_list_mode_set(revolver_list, ELM_LIST_COMPRESS);
-	elm_list_item_append(revolver_list, "[ -------- ]", NULL, NULL, revolver_list_selected_callback, (const int *)0);
-	elm_list_item_append(revolver_list, "[ I###D ]", NULL, NULL, revolver_list_selected_callback, (const int *)1);
-	elm_list_item_append(revolver_list, "[ -------- ]", NULL, NULL, revolver_list_selected_callback, (const int *)0);
-	elm_list_item_append(revolver_list, "[ -------- ]", NULL, NULL, revolver_list_selected_callback, (const int *)0);
-	elm_list_item_append(revolver_list, "[ -------- ]", NULL, NULL, revolver_list_selected_callback, (const int *)0);
-	elm_list_item_append(revolver_list, "[ -------- ]", NULL, NULL, revolver_list_selected_callback, (const int *)0);
-	elm_list_go(revolver_list);
+	__g_ad->revolver_list = elm_list_add(revolver_list_frame);
+	elm_object_content_set(revolver_list_frame, __g_ad->revolver_list);
+	elm_list_mode_set(__g_ad->revolver_list, ELM_LIST_COMPRESS);
+	const int bullit_pos = rand() % 6;
+	for (int i = 0; i < 6; i++) {
+		Elm_Object_Item *item = elm_list_item_append(__g_ad->revolver_list,
+				((i) ? "[ -------- ]" : "[ -------- ]     ======P"),
+						NULL, NULL, revolver_list_selected_callback, (const int *)0);
+		if (i == bullit_pos)
+			elm_list_item_selected_set(item, EINA_TRUE);
+	}
+	elm_list_go(__g_ad->revolver_list);
 
 	__g_ad->main_button = elm_button_add(gameplay_page);
 	elm_grid_pack(gameplay_page, __g_ad->main_button, 0, 85, 100, 15);
@@ -480,7 +505,7 @@ show_gameplay_page()
 	evas_object_smart_callback_add(__g_ad->main_button, "clicked", main_button_click_event, NULL);
 	evas_object_show(__g_ad->main_button);
 
-	Elm_Object_Item *nf_it = elm_naviframe_item_push(__g_ad->nf, "Select Remote Control", NULL, NULL, gameplay_page, NULL);
+	Elm_Object_Item *nf_it = elm_naviframe_item_push(__g_ad->nf, "Charge the bullit", NULL, NULL, gameplay_page, NULL);
 	elm_naviframe_item_pop_cb_set(nf_it, page_gameplay_pop_callback, NULL);
 }
 
