@@ -132,22 +132,28 @@ remote_sensor_listener_cb(conv_service_h service_h, conv_channel_h channel_h,
 	} else if (!strcmp(result_type, "onSuccess")) { // 2. Read request processed sucessfully
 		dlog_print(DLOG_INFO, LOG_TAG, "Read request successful : %s Result", result_type);
 
-		char *channel_type = NULL;
-		conv_channel_get_string(channel_h, "type", &channel_type);
-		dlog_print(DLOG_INFO, LOG_TAG, "Channel read request processed successfully : [%s]", channel_type);
+		// Switch to gameplay page only once.
+		// Don't do it when accelerometer as set on pause or restarted
+		static bool sensors_turned_on = false;
+		if (!sensors_turned_on) {
+			char *channel_type = NULL;
+			conv_channel_get_string(channel_h, "type", &channel_type);
+			dlog_print(DLOG_INFO, LOG_TAG, "Channel read request processed successfully : [%s]", channel_type);
 
-		static bool accelerometer_started = false;
-		static bool proximity_started = false;
+			static bool accelerometer_started = false;
+			static bool proximity_started = false;
 
-		if (!strcmp(channel_type, "2"))
-			accelerometer_started = true;
-		if (!strcmp(channel_type, "8"))
-			proximity_started = true;
+			if (!strcmp(channel_type, "2"))
+				accelerometer_started = true;
+			if (!strcmp(channel_type, "8"))
+				proximity_started = true;
 
-		if (accelerometer_started && proximity_started)
-			show_gameplay_page(); // Go to the actual game page
-
-		g_free(channel_type);
+			if (accelerometer_started && proximity_started) {
+				sensors_turned_on = true;
+				show_gameplay_page(); // Go to the actual game page
+			}
+			g_free(channel_type);
+		}
 	} else if (!(strcmp(result_type, "onRead"))) { // 3. Next portion of accelerometer data received
 
 		// Checking if the data come from Accelerometer channel
@@ -474,6 +480,23 @@ on_roll_cylinder()
 	__g_ad->main_button_lock = true;
 	dlog_print(DLOG_INFO, LOG_TAG, "main button click locked");
 
+	{ // Set accelerometer on pause
+		conv_channel_h channel_h = NULL;
+		conv_channel_create(&channel_h);
+		conv_channel_set_string(channel_h, "type", "2"); // Pure acceleration
+
+		conv_payload_h payload_h = NULL;
+		conv_payload_create(&payload_h);
+		conv_payload_set_string(payload_h, "periodic", "no");
+
+		const int ret = conv_service_read(__g_ad->selected_rss_service_h, channel_h, payload_h);
+		if (ret != CONV_ERROR_NONE)
+			dlog_print(DLOG_ERROR, LOG_TAG, "conv_service_read error [%d]", ret);
+
+		conv_payload_destroy(payload_h);
+		conv_channel_destroy(channel_h);
+	}
+
 	__g_ad->timer_ticks_remaining = 30 + rand() % 10;
 
 	dlog_print(DLOG_INFO, LOG_TAG, "Rotations planned: %d",
@@ -511,6 +534,24 @@ on_pull_trigger()
 		}
 	} else {
 		elm_object_text_set(__g_ad->main_button, "Roll");
+
+		{ // Restart the accelerometer
+			conv_channel_h channel_h = NULL;
+			conv_channel_create(&channel_h);
+			conv_channel_set_string(channel_h, "type", "2"); // Pure acceleration
+
+			conv_payload_h payload_h = NULL;
+			conv_payload_create(&payload_h);
+			conv_payload_set_string(payload_h, "periodic", "yes");
+			conv_payload_set_string(payload_h, "interval", "1000");
+
+			const int ret = conv_service_read(__g_ad->selected_rss_service_h, channel_h, payload_h);
+			if (ret != CONV_ERROR_NONE)
+				dlog_print(DLOG_ERROR, LOG_TAG, "conv_service_read error [%d]", ret);
+
+			conv_payload_destroy(payload_h);
+			conv_channel_destroy(channel_h);
+		}
 	}
 
 	// TODO How to disable the button????
