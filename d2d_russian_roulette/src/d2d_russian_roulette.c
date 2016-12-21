@@ -497,7 +497,8 @@ on_roll_cylinder()
 		conv_channel_destroy(channel_h);
 	}
 
-	__g_ad->timer_ticks_remaining = 30 + rand() % 10;
+	// 5 complete loops for drama + some random value for positioning the bullit
+	__g_ad->timer_ticks_remaining = 30 + rand() % 6;
 
 	dlog_print(DLOG_INFO, LOG_TAG, "Rotations planned: %d",
 			__g_ad->timer_ticks_remaining);
