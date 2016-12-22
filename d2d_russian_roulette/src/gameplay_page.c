@@ -3,7 +3,7 @@
 extern appdata_s *__g_ad;
 
 extern void deinit_d2d();
-extern void toggle_accelerometer(bool start);
+extern void toggle_accelerometer_sensor(bool start);
 
 static Eina_Bool
 __test_timer_cb(void *data)
@@ -52,7 +52,7 @@ on_roll_cylinder()
 	elm_object_text_set(__g_ad->main_button, "rolling...");
 
 	/* Set accelerometer on pause */
-	toggle_accelerometer(false);
+	toggle_accelerometer_sensor(false);
 
 	/* 5 complete loops for drama + some random value for positioning the bullit */
 	__g_ad->timer_ticks_remaining = 30 + rand() % 6;
@@ -91,7 +91,7 @@ on_pull_trigger()
 		elm_object_text_set(__g_ad->main_button, "Roll");
 
 		/* Restart the accelerometer */
-		toggle_accelerometer(true);
+		toggle_accelerometer_sensor(true);
 	}
 
 	// TODO How to disable the button????

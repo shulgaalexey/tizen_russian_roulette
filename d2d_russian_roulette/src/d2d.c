@@ -10,7 +10,7 @@ extern void remocon_list_selected_callback(void *data, Evas_Object *obj, void *e
 static const int CONV_SERVICE_REMOTE_SENSOR = 3;
 
 void
-toggle_accelerometer(bool start)
+toggle_accelerometer_sensor(bool start)
 {
 	conv_channel_h channel_h = NULL;
 	conv_channel_create(&channel_h);
@@ -34,38 +34,39 @@ toggle_accelerometer(bool start)
 	conv_channel_destroy(channel_h);
 }
 
+static void
+start_proximity_sensor()
+{
+	conv_channel_h channel_h = NULL;
+	conv_channel_create(&channel_h);
+	conv_channel_set_string(channel_h, "type", "8"); /* Proximity */
+
+	conv_payload_h payload_h = NULL;
+	conv_payload_create(&payload_h);
+	conv_payload_set_string(payload_h, "periodic", "yes");
+	conv_payload_set_string(payload_h, "interval", "1000");
+
+	conv_service_read(__g_ad->selected_rss_service_h, channel_h, payload_h);
+
+	conv_payload_destroy(payload_h);
+	conv_channel_destroy(channel_h);
+}
+
 /* TODO implement toggle_proximity as well */
 
 static void
 remote_sensor_listener_cb(conv_service_h service_h, conv_channel_h channel_h,
 		conv_error_e error, conv_payload_h payload_h, void* user_data)
 {
-	/*
-	 * That clonned handle is a handle we should use.
-	 * The handle, passed to the callback is temporary within the callback scope.
-	 */
-	conv_service_h service_clone_h = __g_ad->selected_rss_service_h;
-
-	if (!service_clone_h || !service_h || (error != CONV_ERROR_NONE) || !payload_h)
+	if (!__g_ad->selected_rss_service_h || !service_h || (error != CONV_ERROR_NONE) || !payload_h)
 		return; /* Too bad, arguments are invalid */
 
 	char *result_type = NULL;
 	conv_payload_get_string(payload_h, "result_type", &result_type);
 
 	if (!(strcmp(result_type, "onStart"))) { /* 1. Service started */
-		// Preparing and sending read request
-		conv_payload_h payload_h = NULL;
-		conv_payload_create(&payload_h);
-		conv_payload_set_string(payload_h, "periodic", "yes");
-		conv_payload_set_string(payload_h, "interval", "1000");
-
-		conv_channel_set_string(channel_h, "type", "2"); /* Pure acceleration */
-		conv_service_read(service_clone_h, channel_h, payload_h);
-
-		conv_channel_set_string(channel_h, "type", "8"); /* Proximity */
-		conv_service_read(service_clone_h, channel_h, payload_h);
-
-		conv_payload_destroy(payload_h);
+		toggle_accelerometer_sensor(true);
+		start_proximity_sensor();
 	} else if (!strcmp(result_type, "onSuccess")) { /* 2. Read request processed sucessfully */
 		/*
 		 * Switch to gameplay page only once.
