@@ -9,7 +9,7 @@ Russian roulette (Russian: Русская рулетка) is a lethal game of ch
 
 https://en.wikipedia.org/wiki/Russian_roulette
 
-<img src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Nagant_Revolver.jpg" alt="Nagant Revolver" style="width:500px"/>
+<img src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Nagant_Revolver.jpg" alt="Nagant Revolver" style="width:150px"/>
 
 
 ## Architecture
