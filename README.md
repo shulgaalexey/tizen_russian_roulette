@@ -52,3 +52,9 @@ any more.
 ## Architecture
 
 <img src="https://github.com/shulgaalexey/tizen_russian_roulette/blob/master/docs/architecture.png" alt="Architecture" style="width:500px"/>
+
+## Reference
+
+* Russian Roulette on Wikipedia: https://en.wikipedia.org/wiki/Russian_roulette
+* Tizen Device Sensor Framework: https://developer.tizen.org/development/guides/native-application/location-and-sensors/device-sensors#lin_accelerometer
+
