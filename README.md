@@ -58,3 +58,7 @@ any more.
 * Russian Roulette on Wikipedia: https://en.wikipedia.org/wiki/Russian_roulette
 * Tizen Device Sensor Framework: https://developer.tizen.org/development/guides/native-application/location-and-sensors/device-sensors#lin_accelerometer
 
+## TODO
+* Add automatic file transfer for sound file
+* Design D2S scenario
+* Add screen shots
