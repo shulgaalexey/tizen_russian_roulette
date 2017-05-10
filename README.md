@@ -62,3 +62,6 @@ any more.
 * Add automatic file transfer for sound file
 * Design D2S scenario
 * Add screen shots
+
+## See also
+https://www.nixcraft.com/lmao-command-line-russian-roulette-for-linux-and-unix-users/295/
