@@ -7,7 +7,7 @@ The Russian Roulette game for D2D and D2S environment
 
 Russian roulette (Russian: Русская рулетка) is a lethal game of chance in which a player places a single round in a revolver, spins the cylinder, places the muzzle against their head, and pulls the trigger. "Russian" refers to the supposed country of origin, and roulette to the element of risk-taking and the spinning of the revolver's cylinder, which is reminiscent of a spinning roulette wheel.
 
-https://en.wikipedia.org/wiki/Russian_roulette
+(https://en.wikipedia.org/wiki/Russian_roulette)[https://en.wikipedia.org/wiki/Russian_roulette]
 
 ![Nagant Revolver](https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/Nagant_Revolver.jpg/450px-Nagant_Revolver.jpg  "Nagant Revolver")
 
