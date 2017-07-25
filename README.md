@@ -66,3 +66,7 @@ any more.
 
 ## See also
 [Command line Russian Roulette](https://www.nixcraft.com/lmao-command-line-russian-roulette-for-linux-and-unix-users/295/)
+
+
+
+[home](https://shulgaalexey.github.io/tizen_russian_roulette/)
