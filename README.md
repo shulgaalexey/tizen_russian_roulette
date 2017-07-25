@@ -51,12 +51,12 @@ any more.
 
 ## Architecture
 
-<img src="https://github.com/shulgaalexey/tizen_russian_roulette/blob/master/docs/architecture.png" alt="Architecture" style="width:500px"/>
+<img src="docs/architecture.png" alt="Architecture" style="width:500px"/>
 
 ## Reference
 
-* Russian Roulette on Wikipedia: https://en.wikipedia.org/wiki/Russian_roulette
-* Tizen Device Sensor Framework: https://developer.tizen.org/development/guides/native-application/location-and-sensors/device-sensors#lin_accelerometer
+* [Russian Roulette on Wikipedia](https://en.wikipedia.org/wiki/Russian_roulette)
+* [Tizen Device Sensor Framework](https://developer.tizen.org/development/guides/native-application/location-and-sensors/device-sensors#lin_accelerometer)
 
 ## TODO
 * Add automatic file transfer for sound file
@@ -64,4 +64,4 @@ any more.
 * Add screen shots
 
 ## See also
-https://www.nixcraft.com/lmao-command-line-russian-roulette-for-linux-and-unix-users/295/
+[Command line Russian Roulette](https://www.nixcraft.com/lmao-command-line-russian-roulette-for-linux-and-unix-users/295/)
