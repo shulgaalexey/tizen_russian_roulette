@@ -1,4 +1,5 @@
-# tizen_russian_roulette
+# Tizen Russian Roulette
+
 The Russian Roulette game for D2D and D2S environment
 
 *Since Tizen 3.0*
